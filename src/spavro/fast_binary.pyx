@@ -1,3 +1,4 @@
+# distutils: language=c++
 # Copyright (C) 2018 Pluralsight LLC
 '''Fast Cython extension for reading / writing and validating AVRO records.
 
@@ -5,6 +6,7 @@ The main edge this code has is that it parses the schema only once and creates
 a reader/writer call tree from the schema shape. All reads and writes then
 no longer consult the schema saving lookups.'''
 
+from libcpp.vector cimport vector
 import six
 INT_MIN_VALUE = -(1 << 31)
 INT_MAX_VALUE = (1 << 31) - 1
@@ -271,18 +273,24 @@ def get_reader(schema):
 # ======================================================================
 
 
+#cdef void write_int(outbuf, long long signed_datum):
 cdef void write_int(outbuf, long long signed_datum):
     """int and long values are written using variable-length, zig-zag coding.
     """
     cdef:
+        vector[char] buf
         unsigned long long datum
         char temp_datum
     datum = (signed_datum << 1) ^ (signed_datum >> 63)
     while datum > 127:
         temp_datum = (datum & 0x7f) | 0x80
-        outbuf.write((<char *>&temp_datum)[:sizeof(char)])
+        #outbuf.write((<char *>&temp_datum)[:sizeof(char)])
+        buf.push_back(temp_datum)
         datum >>= 7
-    outbuf.write((<char *>&datum)[:sizeof(char)])
+    #outbuf.write((<char *>&datum)[:sizeof(char)])
+    buf.push_back(<char>datum)
+    buf.push_back(0)
+    outbuf.write(buf.data())
 
 write_long = write_int
 
@@ -573,11 +581,15 @@ def make_record_writer(schema):
     cdef list fields = [WriteField(field['name'], get_writer(field['type'])) for field in schema['fields']]
 
     def write_record(outbuf, datum):
+        #cdef:
+        #    vector[char] buf
         for field in fields:
             try:
                 field.writer(outbuf, datum.get(field.name))
+                #field.writer(buf, datum.get(field.name))
             except TypeError as e:
                 raise TypeError("Error writing record schema at fieldname: '{}', datum: '{}'".format(field.name, repr(datum.get(field.name))))
+        #outbuf.write(buf.data())
     write_record.__reduce__ = lambda: (make_record_writer, (schema,))
     return write_record
 
