@@ -822,7 +822,10 @@ class FastDatumWriter(object):
     def write(self, datum, encoder):
         # validate datum
         try:
-            self.write_datum(encoder.writer, datum)
+            #self.write_datum(encoder.writer, datum)
+            res = self.write_datum(datum)
+            print(type(rest))
+            return res
         except TypeError as ex:
             log.error(self.write_datum)
             log.exception("type error")
