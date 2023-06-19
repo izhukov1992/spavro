@@ -591,7 +591,8 @@ def make_union_writer(union_schema):
         writer_lookup = complex_writer_lookup
 
     #def write_union(outbuf, datum):
-    def write_union(datum):
+    #def write_union(datum):
+    cdef vector[char] write_union(datum):
         cdef:
             vector[char] buf
             vector[char] temp
@@ -611,7 +612,8 @@ def make_enum_writer(schema):
 
     # the datum can be str or unicode?
     #def write_enum(outbuf, basestring datum):
-    def write_enum(basestring datum):
+    #def write_enum(basestring datum):
+    cdef vector[char] write_enum(basestring datum):
         cdef int enum_index = symbols.index(datum)
         #write_int(outbuf, enum_index)
         return write_int(enum_index)
@@ -623,7 +625,8 @@ def make_record_writer(schema):
     cdef list fields = [WriteField(field['name'], get_writer(field['type'])) for field in schema['fields']]
 
     #def write_record(outbuf, datum):
-    def write_record(datum):
+    #def write_record(datum):
+    cdef vector[char] write_record(datum):
         cdef:
             vector[char] buf
             vector[char] temp
@@ -644,7 +647,8 @@ def make_array_writer(schema):
     item_writer = get_writer(schema['items'])
 
     #def write_array(outbuf, list datum):
-    def write_array(list datum):
+    #def write_array(list datum):
+    cdef vector[char] write_array(list datum):
         cdef:
             long item_count = len(datum)
             vector[char] buf
@@ -668,7 +672,8 @@ def make_map_writer(schema):
     map_value_writer = get_writer(schema['values'])
 
     #def write_map(outbuf, datum):
-    def write_map(datum):
+    #def write_map(datum):
+    cdef vector[char] write_map(datum):
         cdef:
             long item_count = len(datum)
             vector[char] buf
@@ -695,7 +700,8 @@ def make_boolean_writer(schema):
     '''Create a boolean writer, adds a validation step before the actual
     write function'''
     #def checked_boolean_writer(outbuf, datum):
-    def checked_boolean_writer(datum):
+    #def checked_boolean_writer(datum):
+    cdef vector[char] checked_boolean_writer(datum):
         if not isinstance(datum, bool):
             raise TypeError("{} - Not a boolean value. Schema: {}".format(repr(datum), schema))
         #write_boolean(outbuf, datum)
@@ -709,7 +715,8 @@ def make_fixed_writer(schema):
     # note: not a char* because those are null terminated and fixed
     # has no such limitation
     #def checked_write_fixed(outbuf, datum):
-    def checked_write_fixed(datum):
+    #def checked_write_fixed(datum):
+    cdef vector[char] checked_write_fixed(datum):
         if len(datum) != size:
             raise TypeError("{} - Size Mismatch ({}) for Fixed data. Schema: {}".format(repr(datum), len(datum), schema))
         #write_fixed(outbuf, datum)
@@ -721,7 +728,8 @@ def make_int_writer(schema):
     '''Create a int writer, adds a validation step before the actual
     write function to make sure the int value doesn't overflow'''
     #def checked_int_write(outbuf, datum):
-    def checked_int_write(datum):
+    #def checked_int_write(datum):
+    cdef vector[char] checked_int_write(datum):
         if not isinstance(datum, six.integer_types):
             raise TypeError("Schema violation, {} is not an example of schema {}".format(datum, schema))
         if not INT_MIN_VALUE <= datum <= INT_MAX_VALUE:
@@ -735,7 +743,8 @@ def make_long_writer(schema):
     '''Create a long writer, adds a validation step before the actual
     write function to make sure the long value doesn't overflow'''
     #def checked_long_write(outbuf, datum):
-    def checked_long_write(datum):
+    #def checked_long_write(datum):
+    cdef vector[char] checked_long_write(datum):
         if not (isinstance(datum, six.integer_types)
                         and LONG_MIN_VALUE <= datum <= LONG_MAX_VALUE):
             raise TypeError("{} - Non integer value or overflow. Schema: {}".format(repr(datum), schema))
@@ -746,7 +755,8 @@ def make_long_writer(schema):
 
 def make_string_writer(schema):
     #def checked_string_writer(outbuf, datum):
-    def checked_string_writer(datum):
+    #def checked_string_writer(datum):
+    cdef vector[char] checked_string_writer(datum):
         if not isinstance(datum, six.string_types):
             raise TypeError("{} - is not a string value. Schema: {}".format(repr(datum), schema))
         #write_utf8(outbuf, datum)
