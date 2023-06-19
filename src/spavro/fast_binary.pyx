@@ -750,6 +750,12 @@ def get_writer(schema):
     return writer
 
 
+def write(writer, outbuf, datum):
+    cdef:
+        vector[char] buf
+    writer(outbuf, datum)
+
+
 import struct
 from binascii import crc32
 
