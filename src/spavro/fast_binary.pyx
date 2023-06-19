@@ -285,12 +285,12 @@ cdef void write_int(outbuf, long long signed_datum):
     while datum > 127:
         temp_datum = (datum & 0x7f) | 0x80
         #outbuf.write((<char *>&temp_datum)[:sizeof(char)])
-        buf.push_back(temp_datum)
+        #buf.push_back(temp_datum)
         datum >>= 7
     #outbuf.write((<char *>&datum)[:sizeof(char)])
-    buf.push_back(<char>datum)
-    buf.push_back(0)
-    outbuf.write(buf.data())
+    #buf.push_back(<char>datum)
+    #buf.push_back(0)
+    #outbuf.write(buf.data())
 
 write_long = write_int
 
@@ -301,7 +301,7 @@ cdef void write_bytes(outbuf, datum):
     """
     cdef long byte_count = len(datum)
     write_long(outbuf, byte_count)
-    outbuf.write(datum)
+    #outbuf.write(datum)
 
 
 cdef void write_utf8(outbuf, datum):
@@ -317,7 +317,7 @@ cdef void write_float(outbuf, float datum):
     The float is converted into a 32-bit integer using a method equivalent to
     Java's floatToIntBits and then encoded in little-endian format.
     """
-    outbuf.write((<char *>&datum)[:sizeof(float)])
+    #outbuf.write((<char *>&datum)[:sizeof(float)])
 
 
 cdef void write_double(outbuf, double datum):
@@ -326,7 +326,7 @@ cdef void write_double(outbuf, double datum):
     The double is converted into a 64-bit integer using a method equivalent to
     Java's doubleToLongBits and then encoded in little-endian format.
     """
-    outbuf.write((<char *>&datum)[:sizeof(double)])
+    #outbuf.write((<char *>&datum)[:sizeof(double)])
 
 
 cdef void write_null(outbuf, datum):
@@ -335,14 +335,14 @@ cdef void write_null(outbuf, datum):
 
 cdef void write_fixed(outbuf, datum):
     """A fixed writer writes out exactly the bytes up to a count"""
-    outbuf.write(datum)
+    #outbuf.write(datum)
 
 
 cdef write_boolean(outbuf, char datum):
     """A boolean is written as a single byte whose value is either 0 (false) or
     1 (true)."""
     cdef char x = 1 if datum else 0
-    outbuf.write((<char *>&x)[:sizeof(char)])
+    #outbuf.write((<char *>&x)[:sizeof(char)])
 
 
 avro_to_py = {
@@ -754,6 +754,9 @@ def write(writer, outbuf, datum):
     cdef:
         vector[char] buf
     writer(outbuf, datum)
+    buf.push_back(1)
+    buf.push_back(0)
+    outbuf.write(buf.data())
 
 
 import struct
