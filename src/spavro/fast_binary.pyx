@@ -276,108 +276,144 @@ def get_reader(schema):
 
 #cdef void write_int(outbuf, long long signed_datum):
 #cdef void write_int(outbuf, long long signed_datum, vector[char]& buf):
-cdef void write_int(outbuf, long long signed_datum, char *buf):
+#cdef void write_int(outbuf, long long signed_datum):
+cdef string write_int(outbuf, long long signed_datum):
     """int and long values are written using variable-length, zig-zag coding.
     """
     cdef:
         #vector[char] buf
         unsigned long long datum
         char temp_datum
+        string res
     datum = (signed_datum << 1) ^ (signed_datum >> 63)
     while datum > 127:
         temp_datum = (datum & 0x7f) | 0x80
         #outbuf.write((<char *>&temp_datum)[:sizeof(char)])
-        #buf.push_back(temp_datum)
+        res.push_back(temp_datum)
         datum >>= 7
     #outbuf.write((<char *>&datum)[:sizeof(char)])
-    #buf.push_back(<char>datum)
-    #buf.push_back(0)
+    res.push_back(<char>datum)
+    res.push_back(0)
+    return res
     #outbuf.write(buf.data())
 
 #write_long = write_int
 #cdef void write_long(outbuf, long long signed_datum, vector[char]& buf):
-cdef void write_long(outbuf, long long signed_datum, char *buf):
+#cdef void write_long(outbuf, long long signed_datum):
+cdef string write_long(outbuf, long long signed_datum):
     """int and long values are written using variable-length, zig-zag coding.
     """
     cdef:
         #vector[char] buf
         unsigned long long datum
         char temp_datum
+        string res
     datum = (signed_datum << 1) ^ (signed_datum >> 63)
     while datum > 127:
         temp_datum = (datum & 0x7f) | 0x80
         #outbuf.write((<char *>&temp_datum)[:sizeof(char)])
-        #buf.push_back(temp_datum)
+        res.push_back(temp_datum)
         datum >>= 7
     #outbuf.write((<char *>&datum)[:sizeof(char)])
-    #buf.push_back(<char>datum)
-    #buf.push_back(0)
+    res.push_back(<char>datum)
+    res.push_back(0)
+    return res
     #outbuf.write(buf.data())
 
 
 #cdef void write_bytes(outbuf, datum):
 #cdef void write_bytes(outbuf, datum, vector[char]& buf):
-cdef void write_bytes(outbuf, datum, char *buf):
+#cdef void write_bytes(outbuf, datum):
+cdef string write_bytes(outbuf, datum):
     """
     Bytes are encoded as a long followed by that many bytes of data.
     """
-    cdef long byte_count = len(datum)
-    #write_long(outbuf, byte_count)
-    write_long(outbuf, byte_count, buf)
+    cdef:
+        long byte_count = len(datum)
+        string res
+    res = write_long(outbuf, byte_count)
+    return res
+    #write_long(outbuf, byte_count, buf)
     #outbuf.write(datum)
 
 
 #cdef void write_utf8(outbuf, datum):
 #cdef void write_utf8(outbuf, datum, vector[char]& buf):
-cdef void write_utf8(outbuf, datum, char* buf):
+#cdef void write_utf8(outbuf, datum):
+cdef string write_utf8(outbuf, datum):
     """
     Unicode are encoded as write_bytes of the utf-8 encoded data.
     """
-    #write_bytes(outbuf, datum.encode("utf-8"))
-    write_bytes(outbuf, datum.encode("utf-8"), buf)
+    cdef:
+        string res
+    res = write_bytes(outbuf, datum.encode("utf-8"))
+    return res
+    #write_bytes(outbuf, datum.encode("utf-8"), buf)
 
 
 #cdef void write_float(outbuf, float datum):
 #cdef void write_float(outbuf, float datum, vector[char]& buf):
-cdef void write_float(outbuf, float datum, char *buf):
+#cdef void write_float(outbuf, float datum):
+cdef string write_float(outbuf, float datum):
     """
     A float is written as 4 bytes.
     The float is converted into a 32-bit integer using a method equivalent to
     Java's floatToIntBits and then encoded in little-endian format.
     """
+    cdef:
+        string res
+    res.append((<char *>&datum)[:sizeof(float)])
+    return res
     #outbuf.write((<char *>&datum)[:sizeof(float)])
 
 
 #cdef void write_double(outbuf, double datum):
 #cdef void write_double(outbuf, double datum, vector[char]& buf):
-cdef void write_double(outbuf, double datum, char *buf):
+#cdef void write_double(outbuf, double datum):
+cdef string write_double(outbuf, double datum):
     """
     A double is written as 8 bytes.
     The double is converted into a 64-bit integer using a method equivalent to
     Java's doubleToLongBits and then encoded in little-endian format.
     """
+    cdef:
+        string res
+    res.append((<char *>&datum)[:sizeof(double)])
+    return res
     #outbuf.write((<char *>&datum)[:sizeof(double)])
 
 
 #cdef void write_null(outbuf, datum):
 #cdef void write_null(outbuf, datum, vector[char]& buf):
-cdef void write_null(outbuf, datum, char *buf):
-    pass
+#cdef void write_null(outbuf, datum):
+cdef string write_null(outbuf, datum):
+    cdef:
+        string res
+    return res
 
 
 #cdef void write_fixed(outbuf, datum):
 #cdef void write_fixed(outbuf, datum, vector[char]& buf):
-cdef void write_fixed(outbuf, datum, char *buf):
+#cdef void write_fixed(outbuf, datum):
+cdef string write_fixed(outbuf, datum):
     """A fixed writer writes out exactly the bytes up to a count"""
+    cdef:
+        string res
+    return res
     #outbuf.write(datum)
 
 
 #cdef write_boolean(outbuf, char datum):
 #cdef write_boolean(outbuf, char datum, vector[char]& buf):
-cdef write_boolean(outbuf, char datum, char *buf):
+#cdef write_boolean(outbuf, char datum):
+cdef string write_boolean(outbuf, char datum):
     """A boolean is written as a single byte whose value is either 0 (false) or
     1 (true)."""
+    cdef:
+        string res
     cdef char x = 1 if datum else 0
+    res.push_back(x)
+    return res
     #outbuf.write((<char *>&x)[:sizeof(char)])
 
 
@@ -595,13 +631,18 @@ def make_union_writer(union_schema):
 
         writer_lookup = complex_writer_lookup
 
-    #def write_union(outbuf, datum):
-    def write_union(outbuf, datum, buf):
+    #def write_union(outbuf, datum, buf):
+    def write_union(outbuf, datum):
+        cdef:
+            string res
+            string temp
         idx, data_writer = writer_lookup(datum)
         #write_long(outbuf, idx)
         #data_writer(outbuf, datum)
-        write_long(outbuf, idx, buf)
-        data_writer(outbuf, datum, buf)
+        res = write_long(outbuf, idx)
+        temp = data_writer(outbuf, datum)
+        res.append(temp)
+        return res
     write_union.__reduce__ = lambda: (make_union_writer, (union_schema,))
     return write_union
 
@@ -609,11 +650,14 @@ def make_enum_writer(schema):
     cdef list symbols = schema['symbols']
 
     # the datum can be str or unicode?
-    #def write_enum(outbuf, basestring datum):
-    def write_enum(outbuf, basestring datum, buf):
+    #def write_enum(outbuf, basestring datum, buf):
+    def write_enum(outbuf, basestring datum):
+        cdef:
+            string res
         cdef int enum_index = symbols.index(datum)
         #write_int(outbuf, enum_index)
-        write_int(outbuf, enum_index, buf)
+        res = write_int(outbuf, enum_index)
+        return res
     write_enum.__reduce__ = lambda: (make_enum_writer, (schema,))
     return write_enum
 
@@ -621,18 +665,21 @@ def make_enum_writer(schema):
 def make_record_writer(schema):
     cdef list fields = [WriteField(field['name'], get_writer(field['type'])) for field in schema['fields']]
 
-    #def write_record(outbuf, datum):
-    def write_record(outbuf, datum, buf):
-        #cdef:
-        #    vector[char] buf
+    #def write_record(outbuf, datum, buf):
+    def write_record(outbuf, datum):
+        cdef:
+            string res
+            string temp
         for field in fields:
             try:
-                #field.writer(outbuf, datum.get(field.name))
-                field.writer(outbuf, datum.get(field.name), buf)
+                temp = field.writer(outbuf, datum.get(field.name))
+                res.append(temp)
+                #field.writer(outbuf, datum.get(field.name), buf)
                 #field.writer(buf, datum.get(field.name))
             except TypeError as e:
                 raise TypeError("Error writing record schema at fieldname: '{}', datum: '{}'".format(field.name, repr(datum.get(field.name))))
         #outbuf.write(buf.data())
+        return res
     write_record.__reduce__ = lambda: (make_record_writer, (schema,))
     return write_record
 
@@ -640,17 +687,22 @@ def make_record_writer(schema):
 def make_array_writer(schema):
     item_writer = get_writer(schema['items'])
 
-    #def write_array(outbuf, list datum):
-    def write_array(outbuf, list datum, buf):
-        cdef long item_count = len(datum)
+    #def write_array(outbuf, list datum, buf):
+    def write_array(outbuf, list datum):
+        cdef:
+            long item_count = len(datum)
+            string res
+            string temp
         if item_count > 0:
-            #write_long(outbuf, item_count)
-            write_long(outbuf, item_count, buf)
+            res = write_long(outbuf, item_count)
+            #write_long(outbuf, item_count, buf)
         for item in datum:
-            #item_writer(outbuf, item)
-            item_writer(outbuf, item, buf)
-        #write_long(outbuf, 0)
-        write_long(outbuf, 0, buf)
+            temp = item_writer(outbuf, item)
+            res.append(temp)
+            #item_writer(outbuf, item, buf)
+        temp = write_long(outbuf, 0)
+        res.append(temp)
+        #write_long(outbuf, 0, buf)
     write_array.__reduce__ = lambda: (make_array_writer, (schema,))
     return write_array
 
@@ -658,19 +710,25 @@ def make_array_writer(schema):
 def make_map_writer(schema):
     map_value_writer = get_writer(schema['values'])
 
-    #def write_map(outbuf, datum):
-    def write_map(outbuf, datum, buf):
-        cdef long item_count = len(datum)
+    #def write_map(outbuf, datum, buf):
+    def write_map(outbuf, datum):
+        cdef:
+            long item_count = len(datum)
+            string temp
+            string res
         if item_count > 0:
-            #write_long(outbuf, item_count)
-            write_long(outbuf, item_count, buf)
+            res = write_long(outbuf, item_count)
+            #write_long(outbuf, item_count, buf)
         for key, val in datum.iteritems():
-            #write_utf8(outbuf, key)
-            write_utf8(outbuf, key, buf)
-            #map_value_writer(outbuf, val)
-            map_value_writer(outbuf, val, buf)
-        #write_long(outbuf, 0)
-        write_long(outbuf, 0, buf)
+            temp = write_utf8(outbuf, key)
+            res.append(temp)
+            #write_utf8(outbuf, key, buf)
+            temp = map_value_writer(outbuf, val)
+            res.append(temp)
+            #map_value_writer(outbuf, val, buf)
+        temp = write_long(outbuf, 0)
+        res.append(temp)
+        #write_long(outbuf, 0, buf)
     write_map.__reduce__ = lambda: (make_map_writer, (schema,))
     return write_map
 
@@ -678,12 +736,15 @@ def make_map_writer(schema):
 def make_boolean_writer(schema):
     '''Create a boolean writer, adds a validation step before the actual
     write function'''
-    #def checked_boolean_writer(outbuf, datum):
-    def checked_boolean_writer(outbuf, datum, buf):
+    #def checked_boolean_writer(outbuf, datum, buf):
+    def checked_boolean_writer(outbuf, datum):
+        cdef:
+            string res
         if not isinstance(datum, bool):
             raise TypeError("{} - Not a boolean value. Schema: {}".format(repr(datum), schema))
-        #write_boolean(outbuf, datum)
-        write_boolean(outbuf, datum, buf)
+        res = write_boolean(outbuf, datum)
+        return res
+        #write_boolean(outbuf, datum, buf)
     return checked_boolean_writer
 
 
@@ -692,49 +753,61 @@ def make_fixed_writer(schema):
     cdef long size = schema['size']
     # note: not a char* because those are null terminated and fixed
     # has no such limitation
-    #def checked_write_fixed(outbuf, datum):
-    def checked_write_fixed(outbuf, datum, buf):
+    #def checked_write_fixed(outbuf, datum, buf):
+    def checked_write_fixed(outbuf, datum):
+        cdef:
+            string res
         if len(datum) != size:
             raise TypeError("{} - Size Mismatch ({}) for Fixed data. Schema: {}".format(repr(datum), len(datum), schema))
-        #write_fixed(outbuf, datum)
-        write_fixed(outbuf, datum, buf)
+        res = write_fixed(outbuf, datum)
+        return res
+        #write_fixed(outbuf, datum, buf)
     return checked_write_fixed
 
 
 def make_int_writer(schema):
     '''Create a int writer, adds a validation step before the actual
     write function to make sure the int value doesn't overflow'''
-    #def checked_int_write(outbuf, datum):
-    def checked_int_write(outbuf, datum, buf):
+    #def checked_int_write(outbuf, datum, buf):
+    def checked_int_write(outbuf, datum):
+        cdef:
+            string res
         if not isinstance(datum, six.integer_types):
             raise TypeError("Schema violation, {} is not an example of schema {}".format(datum, schema))
         if not INT_MIN_VALUE <= datum <= INT_MAX_VALUE:
             raise TypeError("Schema violation, value overflow. {} can't be stored in schema: {}".format(datum, schema))
-        #write_long(outbuf, datum)
-        write_long(outbuf, datum, buf)
+        res = write_long(outbuf, datum)
+        return res
+        #write_long(outbuf, datum, buf)
     return checked_int_write
 
 
 def make_long_writer(schema):
     '''Create a long writer, adds a validation step before the actual
     write function to make sure the long value doesn't overflow'''
-    #def checked_long_write(outbuf, datum):
-    def checked_long_write(outbuf, datum, buf):
+    #def checked_long_write(outbuf, datum, buf):
+    def checked_long_write(outbuf, datum):
+        cdef:
+            string res
         if not (isinstance(datum, six.integer_types)
                         and LONG_MIN_VALUE <= datum <= LONG_MAX_VALUE):
             raise TypeError("{} - Non integer value or overflow. Schema: {}".format(repr(datum), schema))
-        #write_long(outbuf, datum)
-        write_long(outbuf, datum, buf)
+        res = write_long(outbuf, datum)
+        return res
+        #write_long(outbuf, datum, buf)
     return checked_long_write
 
 
 def make_string_writer(schema):
-    #def checked_string_writer(outbuf, datum):
-    def checked_string_writer(outbuf, datum, buf):
+    #def checked_string_writer(outbuf, datum, buf):
+    def checked_string_writer(outbuf, datum):
+        cdef:
+            string res
         if not isinstance(datum, six.string_types):
             raise TypeError("{} - is not a string value. Schema: {}".format(repr(datum), schema))
-        #write_utf8(outbuf, datum)
-        write_utf8(outbuf, datum, buf)
+        res = write_utf8(outbuf, datum)
+        return res
+        #write_utf8(outbuf, datum, buf)
     return checked_string_writer
 
 
@@ -815,12 +888,13 @@ def get_writer(schema):
 def write(writer, outbuf, datum):
     cdef:
         #vector[char] buf
-        string buf
-    #writer(outbuf, datum, buf)
-    buf.push_back(1)
-    buf.push_back(0)
+        #string buf
+        string res
+    res = writer(outbuf, datum)
+    #buf.push_back(1)
+    #buf.push_back(0)
     #outbuf.write(buf.data())
-    return buf
+    return res
 
 
 import struct
@@ -835,48 +909,49 @@ class FastBinaryEncoder(object):
         """
         self.writer = writer
 
-    #def write(self, datum):
-    def write(self, datum, buf):
+    #def write(self, datum, buf):
+    def write(self, datum):
         self.writer.write(datum)
 
-    #def write_null(self, datum):
-    def write_null(self, datum, buf):
-        pass
+    #def write_null(self, datum, buf):
+    def write_null(self, datum):
+        #pass
+        return write_null(self.writer, datum)
 
-    #def write_boolean(self, datum):
-    def write_boolean(self, datum, buf):
-        #write_boolean(self.writer, datum)
-        write_boolean(self.writer, datum, buf)
+    #def write_boolean(self, datum, buf):
+    def write_boolean(self, datum):
+        return write_boolean(self.writer, datum)
+        #write_boolean(self.writer, datum, buf)
 
-    #def write_int(self, datum):
-    def write_int(self, datum, buf):
-        #write_int(self.writer, datum)
-        write_int(self.writer, datum, buf)
+    #def write_int(self, datum, buf):
+    def write_int(self, datum):
+        return write_int(self.writer, datum)
+        #write_int(self.writer, datum, buf)
 
-    #def write_long(self, datum):
-    def write_long(self, datum, buf):
-        #write_long(self.writer, datum)
-        write_long(self.writer, datum, buf)
+    #def write_long(self, datum, buf):
+    def write_long(self, datum):
+        return write_long(self.writer, datum)
+        #write_long(self.writer, datum, buf)
 
-    #def write_float(self, datum):
-    def write_float(self, datum, buf):
-        #write_float(self.writer, datum)
-        write_float(self.writer, datum, buf)
+    #def write_float(self, datum, buf):
+    def write_float(self, datum):
+        return write_float(self.writer, datum)
+        #write_float(self.writer, datum, buf)
 
-    #def write_double(self, datum):
-    def write_double(self, datum, buf):
-        #write_double(self.writer, datum)
-        write_double(self.writer, datum, buf)
+    #def write_double(self, datum, buf):
+    def write_double(self, datum):
+        return write_double(self.writer, datum)
+        #write_double(self.writer, datum, buf)
 
-    #def write_bytes(self, datum):
-    def write_bytes(self, datum, buf):
-        #write_bytes(self.writer, datum)
-        write_bytes(self.writer, datum, buf)
+    #def write_bytes(self, datum, buf):
+    def write_bytes(self, datum):
+        return write_bytes(self.writer, datum)
+        #write_bytes(self.writer, datum, buf)
 
-    #def write_utf8(self, datum):
-    def write_utf8(self, datum, buf):
-        #write_utf8(self.writer, datum)
-        write_utf8(self.writer, datum, buf)
+    #def write_utf8(self, datum, buf):
+    def write_utf8(self, datum):
+        return write_utf8(self.writer, datum)
+        #write_utf8(self.writer, datum, buf)
 
     def write_crc32(self, bytes):
         """
