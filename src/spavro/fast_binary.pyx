@@ -1,4 +1,5 @@
 # distutils: language=c++
+
 # Copyright (C) 2018 Pluralsight LLC
 '''Fast Cython extension for reading / writing and validating AVRO records.
 
@@ -6,8 +7,10 @@ The main edge this code has is that it parses the schema only once and creates
 a reader/writer call tree from the schema shape. All reads and writes then
 no longer consult the schema saving lookups.'''
 
-from libcpp.string cimport string
 import six
+
+from libcpp.string cimport string
+
 INT_MIN_VALUE = -(1 << 31)
 INT_MAX_VALUE = (1 << 31) - 1
 LONG_MIN_VALUE = -(1 << 63)
@@ -288,7 +291,7 @@ cdef string write_int(long long signed_datum):
         datum >>= 7
     #outbuf.write((<char *>&datum)[:sizeof(char)])
     res.push_back(<char>datum)
-    res.push_back(0)
+    #res.push_back(0)
     return res
     #outbuf.write(buf.data())
 
@@ -307,7 +310,7 @@ cdef string write_long(long long signed_datum):
         datum >>= 7
     #outbuf.write((<char *>&datum)[:sizeof(char)])
     res.push_back(<char>datum)
-    res.push_back(0)
+    #res.push_back(0)
     return res
     #outbuf.write(buf.data())
 
@@ -845,16 +848,6 @@ def get_writer(schema):
     return writer
 
 
-def write(writer, datum):
-    cdef:
-        string res
-    res = writer(datum)
-    #buf.push_back(1)
-    #buf.push_back(0)
-    #outbuf.write(buf.data())
-    return res
-
-
 import struct
 from binascii import crc32
 
@@ -886,7 +879,6 @@ class FastBinaryEncoder(object):
     def write_float(self, datum):
         return write_float(datum)
 
-    #def write_double(self, datum, buf):
     def write_double(self, datum):
         return write_double(datum)
 
