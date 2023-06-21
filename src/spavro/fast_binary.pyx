@@ -350,7 +350,7 @@ cdef string write_float(float datum):
     """
     cdef:
         string res
-    res.append((<char *>&datum)[:sizeof(float)])
+    res = (<char *>&datum)[:sizeof(float)]
     return res
     #outbuf.write((<char *>&datum)[:sizeof(float)])
 
@@ -363,7 +363,7 @@ cdef string write_double(double datum):
     """
     cdef:
         string res
-    res.append((<char *>&datum)[:sizeof(double)])
+    res = (<char *>&datum)[:sizeof(double)]
     return res
     #outbuf.write((<char *>&datum)[:sizeof(double)])
 
@@ -378,6 +378,7 @@ cdef string write_fixed(datum):
     """A fixed writer writes out exactly the bytes up to a count"""
     cdef:
         string res
+    res = datum
     return res
     #outbuf.write(datum)
 
