@@ -322,7 +322,10 @@ cdef string write_bytes(datum):
     cdef:
         long byte_count = len(datum)
         string res
+        string temp
+    temp = datum
     res = write_long(byte_count)
+    res.append(temp)
     return res
     #write_long(outbuf, byte_count, buf)
     #outbuf.write(datum)
@@ -612,8 +615,8 @@ def make_union_writer(union_schema):
         #write_long(outbuf, idx)
         #data_writer(outbuf, datum)
         res = write_long(idx)
-        #temp = data_writer(outbuf, datum)
-        #res.append(temp)
+        temp = data_writer(datum)
+        res.append(temp)
         return res
     write_union.__reduce__ = lambda: (make_union_writer, (union_schema,))
     return write_union
@@ -671,6 +674,7 @@ def make_array_writer(schema):
             #item_writer(outbuf, item, buf)
         temp = write_long(0)
         res.append(temp)
+        return res
         #write_long(outbuf, 0, buf)
     write_array.__reduce__ = lambda: (make_array_writer, (schema,))
     return write_array
@@ -696,6 +700,7 @@ def make_map_writer(schema):
             #map_value_writer(outbuf, val, buf)
         temp = write_long(0)
         res.append(temp)
+        return res
         #write_long(outbuf, 0, buf)
     write_map.__reduce__ = lambda: (make_map_writer, (schema,))
     return write_map
