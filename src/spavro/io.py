@@ -819,10 +819,10 @@ class FastDatumWriter(object):
             # that returns a python dict! :/
             self.write_datum = get_writer(parsed_writer_schema.to_json())
 
-    def write(self, datum, encoder):
+    def write(self, datum):
         # validate datum
         try:
-            self.write_datum(encoder.writer, datum)
+            return self.write_datum(datum)
         except TypeError as ex:
             log.error(self.write_datum)
             log.exception("type error")
