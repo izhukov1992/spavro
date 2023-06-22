@@ -214,7 +214,7 @@ class DataFileWriter(object):
 
     def append(self, datum):
         """Append a datum to the file."""
-        self.datum_writer.write(datum, self.buffer_encoder)
+        self.datum_writer.write(datum)
         self.block_count += 1
 
         # if the data to write is larger than the sync interval, write the block

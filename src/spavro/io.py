@@ -834,7 +834,7 @@ class FastDatumWriter(object):
         except KeyError:
             datum_writer = get_writer(schema.to_json())
             self.schema_cache[str(schema)] = datum_writer
-        datum_writer(encoder.writer, datum)
+        datum_writer(datum)
 
 if use_fast:
     DatumReader = FastDatumReader
