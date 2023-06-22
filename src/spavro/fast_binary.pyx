@@ -94,7 +94,7 @@ cdef unicode read_utf8(fo):
 # ======================================================================
 from collections import namedtuple
 ReadField = namedtuple('ReadField', ['name', 'reader', 'skip'])
-WriteField = namedtuple('WriteField', ['name', 'writer'])
+WriteField = namedtuple('WriteField', ['name', 'writer', 'schema'])
 
 cpdef unicode get_type(schema):
     if isinstance(schema, list):
@@ -276,88 +276,82 @@ def get_reader(schema):
 # ======================================================================
 
 
-cdef string write_int(long long signed_datum):
+cdef void write_int(long long signed_datum, string& res):
     """int and long values are written using variable-length, zig-zag coding.
     """
     cdef:
         unsigned long long datum
         char temp_datum
-        string res
     datum = (signed_datum << 1) ^ (signed_datum >> 63)
     while datum > 127:
         temp_datum = (datum & 0x7f) | 0x80
         res.push_back(temp_datum)
         datum >>= 7
     res.push_back(<char>datum)
-    return res
 
-write_long = write_int
+cdef void write_long(long long signed_datum, string& res):
+    """int and long values are written using variable-length, zig-zag coding.
+    """
+    cdef:
+        unsigned long long datum
+        char temp_datum
+    datum = (signed_datum << 1) ^ (signed_datum >> 63)
+    while datum > 127:
+        temp_datum = (datum & 0x7f) | 0x80
+        res.push_back(temp_datum)
+        datum >>= 7
+    res.push_back(<char>datum)
 
 
-cdef string write_bytes(datum):
+cdef void write_bytes(datum, string& res):
     """
     Bytes are encoded as a long followed by that many bytes of data.
     """
     cdef:
         long byte_count = len(datum)
-        string res = write_long(byte_count)
-        string temp = datum
-    res.append(temp)
-    return res
+    write_long(byte_count, res)
+    res.append(datum)
 
 
-cdef string write_utf8(datum):
+cdef void write_utf8(datum, string& res):
     """
     Unicode are encoded as write_bytes of the utf-8 encoded data.
     """
-    cdef:
-        string res = write_bytes(datum.encode("utf-8"))
-    return res
+    write_bytes(datum.encode("utf-8"), res)
 
 
-cdef string write_float(float datum):
+cdef void write_float(float datum, string& res):
     """
     A float is written as 4 bytes.
     The float is converted into a 32-bit integer using a method equivalent to
     Java's floatToIntBits and then encoded in little-endian format.
     """
-    cdef:
-        string res = (<char *>&datum)[:sizeof(float)]
-    return res
+    res.append((<char *>&datum)[:sizeof(float)])
 
-
-cdef string write_double(double datum):
+cdef void write_double(double datum, string& res):
     """
     A double is written as 8 bytes.
     The double is converted into a 64-bit integer using a method equivalent to
     Java's doubleToLongBits and then encoded in little-endian format.
     """
-    cdef:
-        string res = (<char *>&datum)[:sizeof(double)]
-    return res
+    res.append((<char *>&datum)[:sizeof(double)])
 
 
-cdef string write_null(datum):
-    cdef:
-        string res
-    return res
+cdef void write_null(datum, string& res):
+    pass
 
 
-cdef string write_fixed(datum):
+cdef void write_fixed(datum, string& res):
     """A fixed writer writes out exactly the bytes up to a count"""
-    cdef:
-        string res = datum
-    return res
+    res.append(datum)
 
 
-cdef string write_boolean(char datum):
+cdef void write_boolean(char datum, string& res):
     """A boolean is written as a single byte whose value is either 0 (false) or
     1 (true)."""
     cdef:
         char x = 1 if datum else 0
-        string res
     res.push_back(x)
-    return res
 
 
 avro_to_py = {
@@ -496,7 +490,7 @@ cdef void create_promotions_for_union(dict writer_lookup_dict):
     if bytes in writer_lookup_dict and unicode not in writer_lookup_dict:
         writer_lookup_dict[unicode] = writer_lookup_dict[bytes][0], lambda output_buffer, val: writer_lookup_dict[bytes][1](output_buffer, val.encode('utf-8'))
 
-
+"""
 def make_union_writer(union_schema):
     cdef list type_list = [get_type(lookup_schema(schema)) for schema in union_schema]
     # cdef dict writer_lookup
@@ -616,7 +610,6 @@ def make_record_writer(schema):
                 res.append(temp)
             except TypeError as e:
                 raise TypeError("Error writing record schema at fieldname: '{}', datum: '{}'".format(field.name, repr(datum.get(field.name))))
-        return res
     write_record.__reduce__ = lambda: (make_record_writer, (schema,))
     return write_record
 
@@ -759,6 +752,24 @@ writer_type_map = {
     'array': make_array_writer,
     'map': make_map_writer
 }
+"""
+
+writer_type_map = {
+    'union': 0,
+    'record': 1,
+    'null': 2,
+    'string': 3,
+    'boolean': 4,
+    'double': 5,
+    'float': 6,
+    'long': 7,
+    'bytes': 8,
+    'int': 9,
+    'fixed': 10,
+    'enum': 11,
+    'array': 12,
+    'map': 13
+}
 
 custom_schema = {}
 
@@ -766,8 +777,8 @@ class WriterPlaceholder(object):
     def __init__(self):
         self.writer = None
 
-    def __call__(self, val):
-        return self.writer(val)
+    #def __call__(self, val):
+    #    return self.writer(val)
 
 
 def get_writer(schema):
@@ -785,17 +796,20 @@ def get_writer(schema):
             fullname = name
         custom_schema[fullname] = schema
         schema_cache[fullname] = placeholder
-        writer = writer_type_map[schema_type](schema)
+        #writer = writer_type_map[schema_type](schema)
+        writer = writer_type_map[schema_type]
         # now that we've returned, assign the writer to the placeholder
         # so that the execution will work
         placeholder.writer = writer
         return writer
     try:
-        writer = writer_type_map[schema_type](schema)
+        #writer = writer_type_map[schema_type](schema)
+        writer = writer_type_map[schema_type]
     except KeyError:
         # lookup the schema by unique previously defined name,
         # i.e. a custom type
-        writer = schema_cache[schema_type]
+        #writer = schema_cache[schema_type]
+        writer = schema_cache[schema_type].writer
 
     return writer
 
@@ -816,28 +830,36 @@ class FastBinaryEncoder(object):
         self.writer.write(datum)
 
     def write_null(self, datum):
-        return write_null(datum)
+        #return write_null(datum)
+        pass
 
     def write_boolean(self, datum):
-        return write_boolean(datum)
+        #return write_boolean(datum)
+        pass
 
     def write_int(self, datum):
-        return write_int(datum)
+        #return write_int(datum)
+        pass
 
     def write_long(self, datum):
-        return write_long(datum)
+        #return write_long(datum)
+        pass
 
     def write_float(self, datum):
-        return write_float(datum)
+        #return write_float(datum)
+        pass
 
     def write_double(self, datum):
-        return write_double(datum)
+        #return write_double(datum)
+        pass
 
     def write_bytes(self, datum):
-        return write_bytes(datum)
+        #return write_bytes(datum)
+        pass
 
     def write_utf8(self, datum):
-        return write_utf8(datum)
+        #return write_utf8(datum)
+        pass
 
     def write_crc32(self, bytes):
         """
@@ -913,3 +935,170 @@ class FastBinaryDecoder(object):
 
     def skip(self, n):
         self.reader.seek(self.reader.tell() + n)
+
+
+cdef void execute(writer, datum, string& res, exec_schema):
+    if writer == 0:  # make_union_writer
+        cdef list type_list = [get_type(lookup_schema(schema)) for schema in exec_schema]
+        # cdef dict writer_lookup
+        # cdef list record_list
+        cdef dict writer_lookup_dict
+        cdef char simple_union
+        cdef list lookup_result
+        cdef long idx
+
+        # if there's more than one kind of record in the union
+        # or if there's a string, enum or fixed combined in the union
+        # or there is both a record and a map in the union then it's no longer
+        # simple. The reason is that reocrds and maps both correspond to python
+        # dict so a simple python type lookup isn't enough to schema match.
+        # enums, strings and fixed are all python data type unicode or string
+        # so those won't work either when mixed
+        simple_union = not(type_list.count('record') > 1 or
+                          len(set(type_list) & set(['string', 'enum', 'fixed', 'bytes'])) > 1 or
+                          len(set(type_list) & set(['record', 'map'])) > 1)
+
+        if simple_union:
+            writer_lookup_dict = {avro_to_py[get_type(lookup_schema(schema))]: (idx, get_writer(schema), schema) for idx, schema in enumerate(exec_schema)}
+
+            create_promotions_for_union(writer_lookup_dict)
+
+            # warning, this will fail if there's both a long and int in a union
+            # or a float and a double in a union (which is valid but nonsensical
+            # in python but valid in avro)
+            def simple_writer_lookup(datum):
+                try:
+                    return writer_lookup_dict[type(datum)]
+                except KeyError:
+                    raise TypeError("{} - Invalid type ({}) in union. Schema: {}".format(repr(datum), type(datum), exec_schema))
+
+            writer_lookup = simple_writer_lookup
+        else:
+            writer_lookup_dict = {}
+            for idx, schema in enumerate(exec_schema):
+                python_type = avro_to_py[get_type(lookup_schema(schema))]
+                # TODO: if fixed and bytes are in the schema then we should check fixed before bytes
+                # I think, since that's more efficient space wise?
+                if python_type in writer_lookup_dict:
+                    writer_lookup_dict[python_type] = writer_lookup_dict[python_type] + [(idx, get_check(schema), get_writer(schema), schema)]
+                else:
+                    writer_lookup_dict[python_type] = [(idx, get_check(schema), get_writer(schema), schema)]
+
+            create_promotions_for_union(writer_lookup_dict)
+            # if int in writer_lookup_dict:
+            #     writer_lookup_dict[long] = writer_lookup_dict[int]
+            # if unicode in writer_lookup_dict:
+            #     writer_lookup_dict[str] = writer_lookup_dict[unicode]
+            # if float in writer_lookup_dict and int not in writer_lookup_dict:
+            #     writer_lookup_dict[int] = writer_lookup_dict[float]
+            # if bytes in writer_lookup_dict and str not in writer_lookup_dict:
+            #     writer_lookup_dict[str] = writer_lookup_dict[bytes]
+
+
+            def complex_writer_lookup(datum):
+                cdef:
+                    long idx
+                    list lookup_result
+                try:
+                    lookup_result = writer_lookup_dict[type(datum)]
+                except KeyError:
+                    raise TypeError("{} - Invalid type ({}) in union. Schema: {}".format(repr(datum), type(datum), exec_schema))
+                if len(lookup_result) == 1:
+                    idx, get_check, writer, schema = lookup_result[0]
+                else:
+                    for idx, get_check, writer, schema in lookup_result:
+                        if get_check(datum):
+                            break
+                    else:
+                        raise TypeError("No matching schema for datum: {}".format(repr(datum)))
+                return idx, writer, schema
+
+            writer_lookup = complex_writer_lookup
+
+        idx, data_writer, schema = writer_lookup(datum)
+        write_long(idx, res)
+        execute(data_writer, datum, res, schema)
+
+    elif writer == 1:  # make_record_writer
+        cdef list fields = [WriteField(field['name'], get_writer(field['type']), field['type']) for field in exec_schema['fields']]
+        for field in fields:
+            try:
+                execute(field.writer, datum.get(field.name), res, field.schema)
+            except TypeError as e:
+                raise TypeError("Error writing record schema at fieldname: '{}', datum: '{}'".format(field.name, repr(datum.get(field.name))))
+
+    elif writer == 2:  # make_null_writer
+        write_null(datum, res)
+
+    elif writer == 3:  # make_string_writer
+        if not isinstance(datum, six.string_types):
+            raise TypeError("{} - is not a string value. Schema: {}".format(repr(datum), exec_schema))
+        write_utf8(datum, res)
+
+    elif writer == 4:  # make_boolean_writer
+        if not isinstance(datum, bool):
+            raise TypeError("{} - Not a boolean value. Schema: {}".format(repr(datum), exec_schema))
+        write_boolean(datum, res)
+
+    elif writer == 5:  # make_double_writer
+        write_double(datum, res)
+
+    elif writer == 6:  # make_float_writer
+        write_float(datum, res)
+
+    elif writer == 7:  # make_long_writer
+        if not (isinstance(datum, six.integer_types)
+                        and LONG_MIN_VALUE <= datum <= LONG_MAX_VALUE):
+            raise TypeError("{} - Non integer value or overflow. Schema: {}".format(repr(datum), exec_schema))
+        write_long(datum, res)
+
+    elif writer == 8:  # make_byte_writer
+        write_bytes(datum, res)
+
+    elif writer == 9:  # make_int_writer
+        if not isinstance(datum, six.integer_types):
+            raise TypeError("Schema violation, {} is not an example of schema {}".format(datum, exec_schema))
+        if not INT_MIN_VALUE <= datum <= INT_MAX_VALUE:
+            raise TypeError("Schema violation, value overflow. {} can't be stored in schema: {}".format(datum, exec_schema))
+        write_long(datum, res)
+
+    elif writer == 10:  # make_fixed_writer
+        cdef long size = exec_schema['size']
+        # note: not a char* because those are null terminated and fixed
+        # has no such limitation
+        if len(datum) != size:
+            raise TypeError("{} - Size Mismatch ({}) for Fixed data. Schema: {}".format(repr(datum), len(datum), exec_schema))
+        write_fixed(datum, res)
+
+    elif writer == 11:  # make_enum_writer
+        cdef:
+            list symbols = exec_schema['symbols']
+            int enum_index = symbols.index(datum)
+        write_int(enum_index, res)
+
+    elif writer == 12:  # make_array_writer
+        item_writer = get_writer(exec_schema['items'])
+        cdef:
+            long item_count = len(datum)
+        if item_count > 0:
+            write_long(item_count, res)
+        for item in datum:
+            execute(item_writer, datum, res, exec_schema)
+        write_long(0, res)
+
+    elif writer == 13:  # make_map_writer
+        map_value_writer = get_writer(exec_schema['values'])
+        cdef:
+            long item_count = len(datum)
+        if item_count > 0:
+            write_long(item_count, res)
+        for key, val in datum.iteritems():
+            write_utf8(key, res)
+            execute(map_value_writer, val, res, exec_schema)
+        write_long(0, res)
+
+
+def write(writer, datum, schema):
+    cdef string res
+    execute(writer, datum, res, schema)
+    return res
