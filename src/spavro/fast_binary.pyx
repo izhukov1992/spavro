@@ -310,7 +310,7 @@ cdef void write_bytes(datum, string& res):
     cdef:
         long byte_count = len(datum)
     write_long(byte_count, res)
-    res.append(datum)
+    #res.append(datum)
 
 
 cdef void write_utf8(datum, string& res):
@@ -341,9 +341,14 @@ cdef void write_null(datum, string& res):
     pass
 
 
-cdef void write_fixed(datum, string& res):
+cdef void write_fixed(datum, string& res, schema):
     """A fixed writer writes out exactly the bytes up to a count"""
-    res.append(datum)
+    cdef long size = schema['size']
+    # note: not a char* because those are null terminated and fixed
+    # has no such limitation
+    if len(datum) != size:
+        raise TypeError("{} - Size Mismatch ({}) for Fixed data. Schema: {}".format(repr(datum), len(datum), schema))
+    #res.append(datum)
 
 
 cdef void write_boolean(char datum, string& res):
@@ -352,6 +357,36 @@ cdef void write_boolean(char datum, string& res):
     cdef:
         char x = 1 if datum else 0
     res.push_back(x)
+
+
+cdef void write_enum(char datum, string& res, schema):
+    cdef:
+        list symbols = schema['symbols']
+        int enum_index = symbols.index(datum)
+    write_int(enum_index, res)
+
+
+cdef void write_array(datum, string& res, schema):
+    item_writer = get_writer(schema['items'])
+    cdef:
+        long item_count = len(datum)
+    if item_count > 0:
+        write_long(item_count, res)
+    for item in datum:
+        execute(item_writer, datum, res, schema)
+    write_long(0, res)
+
+
+cdef void write_map(datum, string& res, schema):
+    map_value_writer = get_writer(schema['values'])
+    cdef:
+        long item_count = len(datum)
+    if item_count > 0:
+        write_long(item_count, res)
+    for key, val in datum.iteritems():
+        write_utf8(key, res)
+        execute(map_value_writer, val, res, schema)
+    write_long(0, res)
 
 
 avro_to_py = {
@@ -937,95 +972,103 @@ class FastBinaryDecoder(object):
         self.reader.seek(self.reader.tell() + n)
 
 
+cdef void write_union(datum, string& res, union_schema):
+    cdef list type_list = [get_type(lookup_schema(schema)) for schema in union_schema]
+    # cdef dict writer_lookup
+    # cdef list record_list
+    """cdef dict writer_lookup_dict
+    cdef char simple_union
+    cdef list lookup_result
+    cdef long idx
+
+    # if there's more than one kind of record in the union
+    # or if there's a string, enum or fixed combined in the union
+    # or there is both a record and a map in the union then it's no longer
+    # simple. The reason is that reocrds and maps both correspond to python
+    # dict so a simple python type lookup isn't enough to schema match.
+    # enums, strings and fixed are all python data type unicode or string
+    # so those won't work either when mixed
+    simple_union = not(type_list.count('record') > 1 or
+                      len(set(type_list) & set(['string', 'enum', 'fixed', 'bytes'])) > 1 or
+                      len(set(type_list) & set(['record', 'map'])) > 1)
+
+    if simple_union:
+        writer_lookup_dict = {avro_to_py[get_type(lookup_schema(schema))]: (idx, get_writer(schema), schema) for idx, schema in enumerate(union_schema)}
+
+        create_promotions_for_union(writer_lookup_dict)
+
+        # warning, this will fail if there's both a long and int in a union
+        # or a float and a double in a union (which is valid but nonsensical
+        # in python but valid in avro)
+        def simple_writer_lookup(datum):
+            try:
+                return writer_lookup_dict[type(datum)]
+            except KeyError:
+                raise TypeError("{} - Invalid type ({}) in union. Schema: {}".format(repr(datum), type(datum), union_schema))
+
+        writer_lookup = simple_writer_lookup
+    else:
+        writer_lookup_dict = {}
+        for idx, schema in enumerate(union_schema):
+            python_type = avro_to_py[get_type(lookup_schema(schema))]
+            # TODO: if fixed and bytes are in the schema then we should check fixed before bytes
+            # I think, since that's more efficient space wise?
+            if python_type in writer_lookup_dict:
+                writer_lookup_dict[python_type] = writer_lookup_dict[python_type] + [(idx, get_check(schema), get_writer(schema), schema)]
+            else:
+                writer_lookup_dict[python_type] = [(idx, get_check(schema), get_writer(schema), schema)]
+
+        create_promotions_for_union(writer_lookup_dict)
+        # if int in writer_lookup_dict:
+        #     writer_lookup_dict[long] = writer_lookup_dict[int]
+        # if unicode in writer_lookup_dict:
+        #     writer_lookup_dict[str] = writer_lookup_dict[unicode]
+        # if float in writer_lookup_dict and int not in writer_lookup_dict:
+        #     writer_lookup_dict[int] = writer_lookup_dict[float]
+        # if bytes in writer_lookup_dict and str not in writer_lookup_dict:
+        #     writer_lookup_dict[str] = writer_lookup_dict[bytes]
+
+
+        def complex_writer_lookup(datum):
+            cdef:
+                long idx
+                list lookup_result
+            try:
+                lookup_result = writer_lookup_dict[type(datum)]
+            except KeyError:
+                raise TypeError("{} - Invalid type ({}) in union. Schema: {}".format(repr(datum), type(datum), union_schema))
+            if len(lookup_result) == 1:
+                idx, get_check, writer, schema = lookup_result[0]
+            else:
+                for idx, get_check, writer, schema in lookup_result:
+                    if get_check(datum):
+                        break
+                else:
+                    raise TypeError("No matching schema for datum: {}".format(repr(datum)))
+            return idx, writer, schema
+
+        writer_lookup = complex_writer_lookup
+
+    idx, data_writer, schema = writer_lookup(datum)
+    write_long(idx, res)
+    execute(data_writer, datum, res, schema)"""
+
+
+cdef void write_record(datum, string& res, record_schema):
+    cdef list fields = [WriteField(field['name'], get_writer(field['type']), field['type']) for field in record_schema['fields']]
+    for field in fields:
+        try:
+            execute(field.writer, datum.get(field.name), res, field.schema)
+        except TypeError as e:
+            raise TypeError("Error writing record schema at fieldname: '{}', datum: '{}'".format(field.name, repr(datum.get(field.name))))
+
+
 cdef void execute(writer, datum, string& res, exec_schema):
     if writer == 0:  # make_union_writer
-        cdef list type_list = [get_type(lookup_schema(schema)) for schema in exec_schema]
-        # cdef dict writer_lookup
-        # cdef list record_list
-        cdef dict writer_lookup_dict
-        cdef char simple_union
-        cdef list lookup_result
-        cdef long idx
-
-        # if there's more than one kind of record in the union
-        # or if there's a string, enum or fixed combined in the union
-        # or there is both a record and a map in the union then it's no longer
-        # simple. The reason is that reocrds and maps both correspond to python
-        # dict so a simple python type lookup isn't enough to schema match.
-        # enums, strings and fixed are all python data type unicode or string
-        # so those won't work either when mixed
-        simple_union = not(type_list.count('record') > 1 or
-                          len(set(type_list) & set(['string', 'enum', 'fixed', 'bytes'])) > 1 or
-                          len(set(type_list) & set(['record', 'map'])) > 1)
-
-        if simple_union:
-            writer_lookup_dict = {avro_to_py[get_type(lookup_schema(schema))]: (idx, get_writer(schema), schema) for idx, schema in enumerate(exec_schema)}
-
-            create_promotions_for_union(writer_lookup_dict)
-
-            # warning, this will fail if there's both a long and int in a union
-            # or a float and a double in a union (which is valid but nonsensical
-            # in python but valid in avro)
-            def simple_writer_lookup(datum):
-                try:
-                    return writer_lookup_dict[type(datum)]
-                except KeyError:
-                    raise TypeError("{} - Invalid type ({}) in union. Schema: {}".format(repr(datum), type(datum), exec_schema))
-
-            writer_lookup = simple_writer_lookup
-        else:
-            writer_lookup_dict = {}
-            for idx, schema in enumerate(exec_schema):
-                python_type = avro_to_py[get_type(lookup_schema(schema))]
-                # TODO: if fixed and bytes are in the schema then we should check fixed before bytes
-                # I think, since that's more efficient space wise?
-                if python_type in writer_lookup_dict:
-                    writer_lookup_dict[python_type] = writer_lookup_dict[python_type] + [(idx, get_check(schema), get_writer(schema), schema)]
-                else:
-                    writer_lookup_dict[python_type] = [(idx, get_check(schema), get_writer(schema), schema)]
-
-            create_promotions_for_union(writer_lookup_dict)
-            # if int in writer_lookup_dict:
-            #     writer_lookup_dict[long] = writer_lookup_dict[int]
-            # if unicode in writer_lookup_dict:
-            #     writer_lookup_dict[str] = writer_lookup_dict[unicode]
-            # if float in writer_lookup_dict and int not in writer_lookup_dict:
-            #     writer_lookup_dict[int] = writer_lookup_dict[float]
-            # if bytes in writer_lookup_dict and str not in writer_lookup_dict:
-            #     writer_lookup_dict[str] = writer_lookup_dict[bytes]
-
-
-            def complex_writer_lookup(datum):
-                cdef:
-                    long idx
-                    list lookup_result
-                try:
-                    lookup_result = writer_lookup_dict[type(datum)]
-                except KeyError:
-                    raise TypeError("{} - Invalid type ({}) in union. Schema: {}".format(repr(datum), type(datum), exec_schema))
-                if len(lookup_result) == 1:
-                    idx, get_check, writer, schema = lookup_result[0]
-                else:
-                    for idx, get_check, writer, schema in lookup_result:
-                        if get_check(datum):
-                            break
-                    else:
-                        raise TypeError("No matching schema for datum: {}".format(repr(datum)))
-                return idx, writer, schema
-
-            writer_lookup = complex_writer_lookup
-
-        idx, data_writer, schema = writer_lookup(datum)
-        write_long(idx, res)
-        execute(data_writer, datum, res, schema)
+        write_union(datum, res, exec_schema)
 
     elif writer == 1:  # make_record_writer
-        cdef list fields = [WriteField(field['name'], get_writer(field['type']), field['type']) for field in exec_schema['fields']]
-        for field in fields:
-            try:
-                execute(field.writer, datum.get(field.name), res, field.schema)
-            except TypeError as e:
-                raise TypeError("Error writing record schema at fieldname: '{}', datum: '{}'".format(field.name, repr(datum.get(field.name))))
+        write_record(datum, res, exec_schema)
 
     elif writer == 2:  # make_null_writer
         write_null(datum, res)
@@ -1063,39 +1106,16 @@ cdef void execute(writer, datum, string& res, exec_schema):
         write_long(datum, res)
 
     elif writer == 10:  # make_fixed_writer
-        cdef long size = exec_schema['size']
-        # note: not a char* because those are null terminated and fixed
-        # has no such limitation
-        if len(datum) != size:
-            raise TypeError("{} - Size Mismatch ({}) for Fixed data. Schema: {}".format(repr(datum), len(datum), exec_schema))
-        write_fixed(datum, res)
+        write_fixed(datum, res, exec_schema)
 
     elif writer == 11:  # make_enum_writer
-        cdef:
-            list symbols = exec_schema['symbols']
-            int enum_index = symbols.index(datum)
-        write_int(enum_index, res)
+        write_enum(datum, res, exec_schema)
 
     elif writer == 12:  # make_array_writer
-        item_writer = get_writer(exec_schema['items'])
-        cdef:
-            long item_count = len(datum)
-        if item_count > 0:
-            write_long(item_count, res)
-        for item in datum:
-            execute(item_writer, datum, res, exec_schema)
-        write_long(0, res)
+        write_array(datum, res, exec_schema)
 
     elif writer == 13:  # make_map_writer
-        map_value_writer = get_writer(exec_schema['values'])
-        cdef:
-            long item_count = len(datum)
-        if item_count > 0:
-            write_long(item_count, res)
-        for key, val in datum.iteritems():
-            write_utf8(key, res)
-            execute(map_value_writer, val, res, exec_schema)
-        write_long(0, res)
+        write_map(datum, res, exec_schema)
 
 
 def write(writer, datum, schema):
