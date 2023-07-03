@@ -824,7 +824,7 @@ class FastDatumWriter(object):
         # validate datum
         try:
             #return self.write_datum(datum)
-            return write(schema, datum)
+            return write(self.schema, datum)
         except TypeError as ex:
             log.error(self.write_datum)
             log.exception("type error")

@@ -5,6 +5,9 @@ The main edge this code has is that it parses the schema only once and creates
 a reader/writer call tree from the schema shape. All reads and writes then
 no longer consult the schema saving lookups.'''
 
+from libc.stdint cimport uint8_t
+from libc.string cimport memcpy
+from cpython cimport array
 import six
 
 INT_MIN_VALUE = -(1 << 31)
@@ -286,7 +289,6 @@ cdef class Writer:
             f"{type(self).__name__} does not implement write_n")
 
 
-@cython.final
 cdef class MemoryWriter(Writer):
 
     cdef readonly array.array buffer
@@ -669,7 +671,7 @@ def make_record_writer(schema):
                 pass
             except TypeError as e:
                 raise TypeError("Error writing record schema at fieldname: '{}', datum: '{}'".format(field.name, repr(datum.get(field.name))))
-        return res
+        #return res
     write_record.__reduce__ = lambda: (make_record_writer, (schema,))
     return write_record
 
@@ -974,5 +976,5 @@ class FastBinaryDecoder(object):
 
 def write(schema, datum):
     cdef MemoryWriter outbuf = MemoryWriter()
-    get_writer(schema)(outbuf, value)
+    get_writer(schema)(outbuf, datum)
     return outbuf.bytes()
