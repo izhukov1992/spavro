@@ -1,5 +1,3 @@
-# distutils: language=c++
-
 # Copyright (C) 2018 Pluralsight LLC
 '''Fast Cython extension for reading / writing and validating AVRO records.
 
@@ -8,8 +6,6 @@ a reader/writer call tree from the schema shape. All reads and writes then
 no longer consult the schema saving lookups.'''
 
 import six
-
-#from libcpp.string cimport string
 
 INT_MIN_VALUE = -(1 << 31)
 INT_MAX_VALUE = (1 << 31) - 1
