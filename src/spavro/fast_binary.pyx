@@ -1136,9 +1136,9 @@ cdef unsigned int execute(writer, datum, array.array outbuf, exec_schema, unsign
     return size
 
 
-def write(writer, datum, schema):
+def write(iobuffer, datum, writer, schema):
     cdef:
         array.array outbuf = array.array('B', [])
-        unsigned int s = 0
-    s = execute(writer, datum, outbuf, schema, s)
-    return outbuf.data.as_chars[:s]
+        unsigned int size = 0
+    size = execute(writer, datum, outbuf, schema, size)
+    iobuffer.write(outbuf.data.as_chars[:size])
