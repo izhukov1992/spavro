@@ -318,6 +318,7 @@ cdef unsigned int write_bytes(datum, array.array outbuf, unsigned int size):
     """
     cdef:
         int n_size = len(datum)
+    size = write_long(n_size, outbuf, size)
     array.resize_smart(outbuf, size + n_size)
     memcpy(outbuf.data.as_chars + size, <const char*>datum, n_size)
     return size + n_size
@@ -359,9 +360,14 @@ cdef unsigned int write_null(datum, array.array outbuf, unsigned int size):
     return size
 
 
-cdef unsigned int write_fixed(datum, array.array res, schema, unsigned int size):
+cdef unsigned int write_fixed(datum, array.array outbuf, schema, unsigned int size):
     """A fixed writer writes out exactly the bytes up to a count"""
     return size
+    cdef:
+        int n_size = len(datum)
+    array.resize_smart(outbuf, size + n_size)
+    memcpy(outbuf.data.as_chars + size, <const char*>datum, n_size)
+    return size + n_size
 
 
 cdef unsigned int write_boolean(char datum, array.array outbuf, unsigned int size):
@@ -1070,14 +1076,14 @@ cdef unsigned int write_union(datum, array.array outbuf, union_schema, unsigned 
     return size
 
 
-cdef unsigned int write_record(datum, array.array outbuf, record_schema, size):
+cdef unsigned int write_record(datum, array.array outbuf, record_schema, unsigned int size):
     cdef list fields = [WriteField(field['name'], get_writer(field['type']), field['type']) for field in record_schema['fields']]
     for field in fields:
         try:
-            execute(field.writer, datum.get(field.name), outbuf, field.schema, size)
+            size = execute(field.writer, datum.get(field.name), outbuf, field.schema, size)
         except TypeError as e:
             raise TypeError("Error writing record schema at fieldname: '{}', datum: '{}'".format(field.name, repr(datum.get(field.name))))
-
+    return size
 
 cdef unsigned int execute(writer, datum, array.array outbuf, exec_schema, unsigned int size):
     if writer == 0:  # make_union_writer
