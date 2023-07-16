@@ -362,7 +362,6 @@ cdef unsigned int write_null(datum, array.array outbuf, unsigned int size):
 
 cdef unsigned int write_fixed(datum, array.array outbuf, schema, unsigned int size):
     """A fixed writer writes out exactly the bytes up to a count"""
-    return size
     cdef:
         int n_size = len(datum)
     array.resize_smart(outbuf, size + n_size)
@@ -997,7 +996,7 @@ cdef unsigned int write_union(datum, array.array outbuf, union_schema, unsigned 
     cdef list type_list = [get_type(lookup_schema(schema)) for schema in union_schema]
     # cdef dict writer_lookup
     # cdef list record_list
-    """cdef dict writer_lookup_dict
+    cdef dict writer_lookup_dict
     cdef char simple_union
     cdef list lookup_result
     cdef long idx
@@ -1071,9 +1070,9 @@ cdef unsigned int write_union(datum, array.array outbuf, union_schema, unsigned 
         writer_lookup = complex_writer_lookup
 
     idx, data_writer, schema = writer_lookup(datum)
-    write_long(idx, res)
-    execute(data_writer, datum, res, schema)"""
-    return size
+    size = write_long(idx, outbuf, size)
+    #return size
+    return execute(data_writer, datum, outbuf, schema, size)
 
 
 cdef unsigned int write_record(datum, array.array outbuf, record_schema, unsigned int size):
