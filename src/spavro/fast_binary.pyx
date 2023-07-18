@@ -851,6 +851,7 @@ writer_type_map = {
 }
 
 custom_schema = {}
+closures = {}
 
 class WriterPlaceholder(object):
     def __init__(self):
@@ -875,6 +876,8 @@ def get_writer(schema):
             fullname = name
         custom_schema[fullname] = schema
         schema_cache[fullname] = placeholder
+        if schema_type == 'record':
+            closures[fullname] = [WriteField(field['name'], get_writer(field['type']), field['type']) for field in schema['fields']]
         #writer = writer_type_map[schema_type](schema)
         writer = writer_type_map[schema_type]
         # now that we've returned, assign the writer to the placeholder
@@ -1117,10 +1120,20 @@ cdef unsigned int write_record(datum, array.array outbuf, record_schema, unsigne
     #if not 'fields' in record_schema:
     #    raise Exception(f"999999999 {record_schema}")
 
-    if type(record_schema) is str and record_schema in custom_schema:
-        record_schema = custom_schema[record_schema]
+    cdef list fields
 
-    cdef list fields = [WriteField(field['name'], get_writer(field['type']), field['type']) for field in record_schema['fields']]
+    if type(record_schema) is str: # and record_schema in custom_schema:
+        #record_schema = custom_schema[record_schema]
+        fields = closures[record_schema]
+    else:
+        namespace = record_schema.get('namespace')
+        name = record_schema.get('name')
+        if namespace and "." not in name:
+            fullname = '.'.join([namespace, name])
+        else:
+            fullname = name
+        fields = closures[fullname]
+
     for field in fields:
         try:
             size = execute(field.writer, datum.get(field.name), outbuf, field.schema, size)
