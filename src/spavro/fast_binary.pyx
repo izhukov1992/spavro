@@ -1130,37 +1130,46 @@ cdef unsigned int write_record(datum, array.array outbuf, record_schema, unsigne
 
 cdef unsigned int execute(writer, datum, array.array outbuf, exec_schema, unsigned int size):
     if writer == 0:  # make_union_writer
+        print(f"write_union: {datum}")
         size = write_union(datum, outbuf, exec_schema, size)
 
     elif writer == 1:  # make_record_writer
+        print(f"write_record: {datum}")
         size = write_record(datum, outbuf, exec_schema, size)
 
     elif writer == 2:  # make_null_writer
+        print(f"write_null: {datum}")
         size = write_null(datum, outbuf, size)
 
     elif writer == 3:  # make_string_writer
         if not isinstance(datum, six.string_types):
             raise TypeError("{} - is not a string value. Schema: {}".format(repr(datum), exec_schema))
+        print(f"write_utf8: {datum}")
         size = write_utf8(datum, outbuf, size)
 
     elif writer == 4:  # make_boolean_writer
         if not isinstance(datum, bool):
             raise TypeError("{} - Not a boolean value. Schema: {}".format(repr(datum), exec_schema))
+        print(f"write_boolean: {datum}")
         size = write_boolean(datum, outbuf, size)
 
     elif writer == 5:  # make_double_writer
+        print(f"write_double: {datum}")
         size = write_double(datum, outbuf, size)
 
     elif writer == 6:  # make_float_writer
+        print(f"write_float: {datum}")
         size = write_float(datum, outbuf, size)
 
     elif writer == 7:  # make_long_writer
         if not (isinstance(datum, six.integer_types)
                         and LONG_MIN_VALUE <= datum <= LONG_MAX_VALUE):
             raise TypeError("{} - Non integer value or overflow. Schema: {}".format(repr(datum), exec_schema))
+        print(f"write_long: {datum}")
         size = write_long(datum, outbuf, size)
 
     elif writer == 8:  # make_byte_writer
+        print(f"write_bytes: {datum}")
         size = write_bytes(datum, outbuf, size)
 
     elif writer == 9:  # make_int_writer
@@ -1168,18 +1177,23 @@ cdef unsigned int execute(writer, datum, array.array outbuf, exec_schema, unsign
             raise TypeError("Schema violation, {} is not an example of schema {}".format(datum, exec_schema))
         if not INT_MIN_VALUE <= datum <= INT_MAX_VALUE:
             raise TypeError("Schema violation, value overflow. {} can't be stored in schema: {}".format(datum, exec_schema))
+        print(f"write_long: {datum}")
         size = write_long(datum, outbuf, size)
 
     elif writer == 10:  # make_fixed_writer
+        print(f"write_fixed: {datum}")
         size = write_fixed(datum, outbuf, exec_schema, size)
 
     elif writer == 11:  # make_enum_writer
+        print(f"write_enum: {datum}")
         size = write_enum(datum, outbuf, exec_schema, size)
 
     elif writer == 12:  # make_array_writer
+        print(f"write_array: {datum}")
         size = write_array(datum, outbuf, exec_schema, size)
 
     elif writer == 13:  # make_map_writer
+        print(f"write_map: {datum}")
         size = write_map(datum, outbuf, exec_schema, size)
 
     return size
