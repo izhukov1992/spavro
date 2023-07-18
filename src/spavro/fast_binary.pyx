@@ -1129,6 +1129,7 @@ cdef unsigned int write_record(datum, array.array outbuf, record_schema, unsigne
     return size
 
 cdef unsigned int execute(writer, datum, array.array outbuf, exec_schema, unsigned int size):
+    """
     if writer == 0:  # make_union_writer
         print(f"write_union: {datum}")
         size = write_union(datum, outbuf, exec_schema, size)
@@ -1197,11 +1198,68 @@ cdef unsigned int execute(writer, datum, array.array outbuf, exec_schema, unsign
         size = write_map(datum, outbuf, exec_schema, size)
 
     return size
+    """
+
+    """
+    size = write_long(5, outbuf, size)
+    write_long: 386384
+    write_long: 156915
+    write_long: 0
+    write_utf8: 3904639
+    write_long: 6
+    write_long: 55
+    """
+    return size
 
 
 def write(iobuffer, datum, writer, schema):
     cdef:
         array.array outbuf = array.array('B', [])
         unsigned int size = 0
-    size = execute(writer, datum, outbuf, schema, size)
+    #size = execute(writer, datum, outbuf, schema, size)
+
+    size = write_long(datum[0], outbuf, size)
+    size = write_long(datum[1], outbuf, size)
+    size = write_long(datum[2], outbuf, size)
+    size = write_long(datum[3], outbuf, size)
+    size = write_utf8(datum[4], outbuf, size)
+    size = write_long(datum[5], outbuf, size)
+    size = write_utf8(datum[6], outbuf, size)
+    size = write_null(datum[7], outbuf, size)
+    size = write_utf8(datum[8], outbuf, size)
+    size = write_utf8(datum[9], outbuf, size)
+
+    size = write_utf8(datum[10], outbuf, size)
+    size = write_utf8(datum[11], outbuf, size)
+    size = write_long(datum[12], outbuf, size)
+    size = write_utf8(datum[13], outbuf, size)
+    size = write_long(datum[14], outbuf, size)
+    size = write_utf8(datum[15], outbuf, size)
+    size = write_utf8(datum[16], outbuf, size)
+    size = write_null(datum[17], outbuf, size)
+    size = write_null(datum[18], outbuf, size)
+    size = write_utf8(datum[19], outbuf, size)
+
+    size = write_float(datum[20], outbuf, size)
+    size = write_float(datum[21], outbuf, size)
+    size = write_long(datum[22], outbuf, size)
+    size = write_utf8(datum[23], outbuf, size)
+    size = write_utf8(datum[24], outbuf, size)
+    size = write_long(datum[25], outbuf, size)
+    size = write_utf8(datum[26], outbuf, size)
+    size = write_long(datum[27], outbuf, size)
+    size = write_utf8(datum[28], outbuf, size)
+    size = write_null(datum[29], outbuf, size)
+
+    size = write_null(datum[30], outbuf, size)
+    size = write_null(datum[31], outbuf, size)
+    size = write_null(datum[32], outbuf, size)
+    size = write_utf8(datum[33], outbuf, size)
+    size = write_long(datum[34], outbuf, size)
+    size = write_utf8(datum[35], outbuf, size)
+    size = write_utf8(datum[36], outbuf, size)
+    size = write_long(datum[37], outbuf, size)
+    size = write_utf8(datum[38], outbuf, size)
+    size = write_utf8(datum[39], outbuf, size)
+
     iobuffer.write(outbuf.data.as_chars[:size])
