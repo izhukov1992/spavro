@@ -360,7 +360,7 @@ cdef write_double(double datum, array.array outbuf):
 #    pass
 
 
-cdef write_fixed(datum, array.array outbuf, schema):
+cdef write_fixed(datum, array.array outbuf):
     """A fixed writer writes out exactly the bytes up to a count"""
     cdef:
         int n_size = len(datum)
@@ -379,9 +379,8 @@ cdef write_boolean(char datum, array.array outbuf):
     outbuf.data.as_uchars[size] = x
 
 
-cdef write_enum(char datum, array.array outbuf, schema):
+cdef write_enum(char datum, array.array outbuf, list symbols):
     cdef:
-        list symbols = schema['symbols']
         int enum_index = symbols.index(datum)
     write_int(enum_index, outbuf)
 
@@ -899,6 +898,7 @@ cdef write_record(dict datum, array.array outbuf, list fields):
         except TypeError as e:
             raise TypeError("Error writing record schema at fieldname: '{}', datum: '{}'".format(field.name, repr(datum.get(field.name))))
 
+"""
 cdef unsigned int execute(writer, datum, array.array outbuf, exec_schema):
     if writer == 0:  # make_union_writer
         write_union(datum, outbuf, exec_schema)
@@ -953,6 +953,7 @@ cdef unsigned int execute(writer, datum, array.array outbuf, exec_schema):
 
     elif writer == 13:  # make_map_writer
         write_map(datum, outbuf, exec_schema)
+"""
 
 
 cdef w(list writer, datum, array.array outbuf):
@@ -979,6 +980,37 @@ cdef w(list writer, datum, array.array outbuf):
             #raise TypeError("{} - Not a boolean value. Schema: {}".format(repr(datum), exec_schema))
             raise TypeError("{} - Not a boolean value.".format(repr(datum)))
         write_boolean(datum, outbuf)
+
+    elif writer_f == 5:  # make_double_writer
+        write_double(datum, outbuf)
+
+    elif writer_f == 6:  # make_float_writer
+        write_float(datum, outbuf)
+
+    elif writer_f == 7:  # make_long_writer
+        if not (isinstance(datum, six.integer_types)
+                        and LONG_MIN_VALUE <= datum <= LONG_MAX_VALUE):
+            #raise TypeError("{} - Non integer value or overflow. Schema: {}".format(repr(datum), exec_schema))
+            raise TypeError("{} - Non integer value or overflow.".format(repr(datum)))
+        write_long(datum, outbuf)
+
+    elif writer_f == 8:  # make_byte_writer
+        write_bytes(datum, outbuf)
+
+    elif writer_f == 9:  # make_int_writer
+        if not isinstance(datum, six.integer_types):
+            #raise TypeError("Schema violation, {} is not an example of schema {}".format(datum, exec_schema))
+            raise TypeError("Schema violation, {} is not an example of integer".format(datum))
+        if not INT_MIN_VALUE <= datum <= INT_MAX_VALUE:
+            #raise TypeError("Schema violation, value overflow. {} can't be stored in schema: {}".format(datum, exec_schema))
+            raise TypeError("Schema violation, value overflow. {} can't be stored in schema".format(datum))
+        write_long(datum, outbuf)
+
+    elif writer_f == 10:  # make_fixed_writer
+        write_fixed(datum, outbuf)
+
+    elif writer_f == 11:  # make_enum_writer
+        write_enum(datum, outbuf, writer[1])
 
     elif writer_f == 12:  # make_union_writer
         write_array(datum, outbuf, writer[1])
