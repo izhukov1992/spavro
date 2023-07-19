@@ -356,8 +356,8 @@ cdef write_double(double datum, array.array outbuf):
     memcpy(outbuf.data.as_chars + size, <const char*>&datum, n_size)
 
 
-cdef write_null(datum, array.array outbuf):
-    pass
+#cdef write_null(datum, array.array outbuf):
+#    pass
 
 
 cdef write_fixed(datum, array.array outbuf, schema):
@@ -386,40 +386,26 @@ cdef write_enum(char datum, array.array outbuf, schema):
     write_int(enum_index, outbuf)
 
 
-cdef write_array(datum, array.array outbuf, schema):
-    #print(f"array: {schema} > {datum} > {size}")
-
-    #if type(schema['items']) is str and schema['items'] in custom_schema:
-    #    schema['items'] = custom_schema[schema['items']]
-
-    item_writer = get_writer(schema['items'])
-
-    #raise Exception(f"66666555555 {schema['items']}")
-
-    #try:
-    #    item_writer = get_writer(schema['items'])
-    #except:
-    #    raise Exception(f"66666777777 {schema} | {datum}")
-    #    #raise Exception(f"6666677777 {schema} - {item_writer} | {datum}")
-
+cdef write_array(list datum, array.array outbuf, list item_writer):
     cdef:
         long item_count = len(datum)
     if item_count > 0:
         write_long(item_count, outbuf)
     for item in datum:
-        execute(item_writer, item, outbuf, schema['items'])
+        #execute(item_writer, item, outbuf, schema['items'])
+        w(item_writer, item, outbuf)
     write_long(0, outbuf)
 
 
-cdef write_map(datum, array.array outbuf, schema):
-    map_value_writer = get_writer(schema['values'])
+cdef write_map(dict datum, array.array outbuf, list map_value_writer):
     cdef:
         long item_count = len(datum)
     if item_count > 0:
         write_long(item_count, outbuf)
     for key, val in datum.iteritems():
         write_utf8(key, outbuf)
-        execute(map_value_writer, val, outbuf, schema)
+        #execute(map_value_writer, val, outbuf, schema)
+        w(map_value_writer, val, outbuf)
     write_long(0, outbuf)
 
 
@@ -703,12 +689,12 @@ def make_enum_writer(schema):
 
 
 def make_array_writer(schema):
-    item_writer = get_writer(schema['items'])
+    cdef list item_writer = get_writer(schema['items'])
     return [12, item_writer]
 
 
 def make_map_writer(schema):
-    map_value_writer = get_writer(schema['values'])
+    cdef list map_value_writer = get_writer(schema['values'])
     return [13, map_value_writer]
 
 
@@ -921,8 +907,8 @@ cdef unsigned int execute(writer, datum, array.array outbuf, exec_schema):
         #write_record(datum, outbuf, exec_schema)
         pass
 
-    elif writer == 2:  # make_null_writer
-        write_null(datum, outbuf)
+    #elif writer == 2:  # make_null_writer
+    #    write_null(datum, outbuf)
 
     elif writer == 3:  # make_string_writer
         if not isinstance(datum, six.string_types):
@@ -976,8 +962,29 @@ cdef w(list writer, datum, array.array outbuf):
     if writer_f == 0:  # make_union_writer
         write_union(datum, outbuf, writer[1])
 
-    elif writer_f == 1:  # make_union_writer
+    elif writer_f == 1:  # make_record_writer
         write_record(datum, outbuf, writer[1])
+
+    #elif writer_f == 2:  # make_null_writer
+    #    write_null(datum, outbuf, writer[1])
+
+    elif writer_f == 3:  # make_string_writer
+        if not isinstance(datum, six.string_types):
+            #raise TypeError("{} - is not a string value. Schema: {}".format(repr(datum), exec_schema))
+            raise TypeError("{} - is not a string value.".format(repr(datum)))
+        write_utf8(datum, outbuf)
+
+    elif writer_f == 4:  # make_boolean_writer
+        if not isinstance(datum, bool):
+            #raise TypeError("{} - Not a boolean value. Schema: {}".format(repr(datum), exec_schema))
+            raise TypeError("{} - Not a boolean value.".format(repr(datum)))
+        write_boolean(datum, outbuf)
+
+    elif writer_f == 12:  # make_union_writer
+        write_array(datum, outbuf, writer[1])
+
+    elif writer_f == 13:  # make_union_writer
+        write_map(datum, outbuf, writer[1])
 
 
 def write(iobuffer, datum, writer, schema):
