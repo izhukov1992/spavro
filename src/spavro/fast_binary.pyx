@@ -966,7 +966,7 @@ cdef void execute(array.array outbuf, datum, list writer):
         write_map_to_array(outbuf, datum, writer[1])
 
 
-def write(iobuffer, datum, writer, schema):
+def write(iobuffer, datum, writer):
     cdef array.array outbuf = array.array('B', [])
     execute(outbuf, datum, writer)
     iobuffer.write(outbuf.data.as_chars[:len(outbuf)])
