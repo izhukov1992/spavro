@@ -2898,7 +2898,7 @@ static PyObject *__pyx_pf_6spavro_11fast_binary_17FastBinaryDecoder_32skip_doubl
 static PyObject *__pyx_pf_6spavro_11fast_binary_17FastBinaryDecoder_34skip_bytes(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_6spavro_11fast_binary_17FastBinaryDecoder_36skip_utf8(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_6spavro_11fast_binary_17FastBinaryDecoder_38skip(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_n); /* proto */
-static PyObject *__pyx_pf_6spavro_11fast_binary_96write(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_iobuffer, PyObject *__pyx_v_datum, PyObject *__pyx_v_writer, CYTHON_UNUSED PyObject *__pyx_v_schema); /* proto */
+static PyObject *__pyx_pf_6spavro_11fast_binary_96write(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_iobuffer, PyObject *__pyx_v_datum, PyObject *__pyx_v_writer); /* proto */
 static int __pyx_pf_7cpython_5array_5array___getbuffer__(arrayobject *__pyx_v_self, Py_buffer *__pyx_v_info, CYTHON_UNUSED int __pyx_v_flags); /* proto */
 static void __pyx_pf_7cpython_5array_5array_2__releasebuffer__(CYTHON_UNUSED arrayobject *__pyx_v_self, Py_buffer *__pyx_v_info); /* proto */
 static PyObject *__pyx_pf_11cfunc_dot_to_py_48__Pyx_CFunc_void____object____long__long___to_py_wrap(PyObject *__pyx_self, PyObject *__pyx_v_outbuf, PY_LONG_LONG __pyx_v_signed_datum); /* proto */
@@ -20889,7 +20889,7 @@ static void __pyx_f_6spavro_11fast_binary_execute(arrayobject *__pyx_v_outbuf, P
 /* "spavro/fast_binary.pyx":969
  * 
  * 
- * def write(iobuffer, datum, writer, schema):             # <<<<<<<<<<<<<<
+ * def write(iobuffer, datum, writer):             # <<<<<<<<<<<<<<
  *     cdef array.array outbuf = array.array('B', [])
  *     execute(outbuf, datum, writer)
  */
@@ -20901,7 +20901,6 @@ static PyObject *__pyx_pw_6spavro_11fast_binary_97write(PyObject *__pyx_self, Py
   PyObject *__pyx_v_iobuffer = 0;
   PyObject *__pyx_v_datum = 0;
   PyObject *__pyx_v_writer = 0;
-  CYTHON_UNUSED PyObject *__pyx_v_schema = 0;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -20909,14 +20908,12 @@ static PyObject *__pyx_pw_6spavro_11fast_binary_97write(PyObject *__pyx_self, Py
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("write (wrapper)", 0);
   {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_iobuffer,&__pyx_n_s_datum,&__pyx_n_s_writer,&__pyx_n_s_schema,0};
-    PyObject* values[4] = {0,0,0,0};
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_iobuffer,&__pyx_n_s_datum,&__pyx_n_s_writer,0};
+    PyObject* values[3] = {0,0,0};
     if (unlikely(__pyx_kwds)) {
       Py_ssize_t kw_args;
       const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
       switch (pos_args) {
-        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
-        CYTHON_FALLTHROUGH;
         case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
         CYTHON_FALLTHROUGH;
         case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
@@ -20935,53 +20932,45 @@ static PyObject *__pyx_pw_6spavro_11fast_binary_97write(PyObject *__pyx_self, Py
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_datum)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("write", 1, 4, 4, 1); __PYX_ERR(0, 969, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("write", 1, 3, 3, 1); __PYX_ERR(0, 969, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_writer)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("write", 1, 4, 4, 2); __PYX_ERR(0, 969, __pyx_L3_error)
-        }
-        CYTHON_FALLTHROUGH;
-        case  3:
-        if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_schema)) != 0)) kw_args--;
-        else {
-          __Pyx_RaiseArgtupleInvalid("write", 1, 4, 4, 3); __PYX_ERR(0, 969, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("write", 1, 3, 3, 2); __PYX_ERR(0, 969, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
         if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "write") < 0)) __PYX_ERR(0, 969, __pyx_L3_error)
       }
-    } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
-      values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
     }
     __pyx_v_iobuffer = values[0];
     __pyx_v_datum = values[1];
     __pyx_v_writer = values[2];
-    __pyx_v_schema = values[3];
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("write", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 969, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("write", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 969, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("spavro.fast_binary.write", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6spavro_11fast_binary_96write(__pyx_self, __pyx_v_iobuffer, __pyx_v_datum, __pyx_v_writer, __pyx_v_schema);
+  __pyx_r = __pyx_pf_6spavro_11fast_binary_96write(__pyx_self, __pyx_v_iobuffer, __pyx_v_datum, __pyx_v_writer);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6spavro_11fast_binary_96write(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_iobuffer, PyObject *__pyx_v_datum, PyObject *__pyx_v_writer, CYTHON_UNUSED PyObject *__pyx_v_schema) {
+static PyObject *__pyx_pf_6spavro_11fast_binary_96write(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_iobuffer, PyObject *__pyx_v_datum, PyObject *__pyx_v_writer) {
   arrayobject *__pyx_v_outbuf = 0;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -20997,7 +20986,7 @@ static PyObject *__pyx_pf_6spavro_11fast_binary_96write(CYTHON_UNUSED PyObject *
 
   /* "spavro/fast_binary.pyx":970
  * 
- * def write(iobuffer, datum, writer, schema):
+ * def write(iobuffer, datum, writer):
  *     cdef array.array outbuf = array.array('B', [])             # <<<<<<<<<<<<<<
  *     execute(outbuf, datum, writer)
  *     iobuffer.write(outbuf.data.as_chars[:len(outbuf)])
@@ -21019,7 +21008,7 @@ static PyObject *__pyx_pf_6spavro_11fast_binary_96write(CYTHON_UNUSED PyObject *
   __pyx_t_1 = 0;
 
   /* "spavro/fast_binary.pyx":971
- * def write(iobuffer, datum, writer, schema):
+ * def write(iobuffer, datum, writer):
  *     cdef array.array outbuf = array.array('B', [])
  *     execute(outbuf, datum, writer)             # <<<<<<<<<<<<<<
  *     iobuffer.write(outbuf.data.as_chars[:len(outbuf)])
@@ -21058,7 +21047,7 @@ static PyObject *__pyx_pf_6spavro_11fast_binary_96write(CYTHON_UNUSED PyObject *
   /* "spavro/fast_binary.pyx":969
  * 
  * 
- * def write(iobuffer, datum, writer, schema):             # <<<<<<<<<<<<<<
+ * def write(iobuffer, datum, writer):             # <<<<<<<<<<<<<<
  *     cdef array.array outbuf = array.array('B', [])
  *     execute(outbuf, datum, writer)
  */
@@ -27277,14 +27266,14 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   /* "spavro/fast_binary.pyx":969
  * 
  * 
- * def write(iobuffer, datum, writer, schema):             # <<<<<<<<<<<<<<
+ * def write(iobuffer, datum, writer):             # <<<<<<<<<<<<<<
  *     cdef array.array outbuf = array.array('B', [])
  *     execute(outbuf, datum, writer)
  */
-  __pyx_tuple__219 = PyTuple_Pack(5, __pyx_n_s_iobuffer, __pyx_n_s_datum, __pyx_n_s_writer, __pyx_n_s_schema, __pyx_n_s_outbuf); if (unlikely(!__pyx_tuple__219)) __PYX_ERR(0, 969, __pyx_L1_error)
+  __pyx_tuple__219 = PyTuple_Pack(4, __pyx_n_s_iobuffer, __pyx_n_s_datum, __pyx_n_s_writer, __pyx_n_s_outbuf); if (unlikely(!__pyx_tuple__219)) __PYX_ERR(0, 969, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__219);
   __Pyx_GIVEREF(__pyx_tuple__219);
-  __pyx_codeobj__220 = (PyObject*)__Pyx_PyCode_New(4, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__219, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_spavro_fast_binary_pyx, __pyx_n_s_write, 969, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__220)) __PYX_ERR(0, 969, __pyx_L1_error)
+  __pyx_codeobj__220 = (PyObject*)__Pyx_PyCode_New(3, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__219, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_spavro_fast_binary_pyx, __pyx_n_s_write, 969, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__220)) __PYX_ERR(0, 969, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -29787,7 +29776,7 @@ if (!__Pyx_RefNanny) {
   /* "spavro/fast_binary.pyx":969
  * 
  * 
- * def write(iobuffer, datum, writer, schema):             # <<<<<<<<<<<<<<
+ * def write(iobuffer, datum, writer):             # <<<<<<<<<<<<<<
  *     cdef array.array outbuf = array.array('B', [])
  *     execute(outbuf, datum, writer)
  */
