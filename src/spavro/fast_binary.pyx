@@ -902,7 +902,7 @@ cdef void write_union_to_array(array.array outbuf, datum, writer_lookup):
     execute(outbuf, datum, data_writer)
 
 
-cdef void write_record_to_array(array.array outbuf, dict datum, list fields):
+cdef void write_record_to_array(array.array outbuf, dict datum, list fields) except *:
     for field in fields:
         try:
             execute(outbuf, datum.get(field.name), field.writer)
